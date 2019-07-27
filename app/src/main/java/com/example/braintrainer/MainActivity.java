@@ -54,4 +54,15 @@ public class MainActivity extends AppCompatActivity {
 
         rightAnswerPosition = (int)(Math.random() * 4);
     }
+
+    private int generateWrongAnswer(){
+
+        int result;
+
+        do {
+            result = (int)(Math.random() * max * 2 + 1) - (max - min);
+        }while (result == rightAnswer);
+
+        return result;
+    }
 }
