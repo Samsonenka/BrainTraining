@@ -1,13 +1,17 @@
 package com.example.braintrainer;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPositive;
     private int min = 5;
     private int max = 30;
+    private int countOfQuestion = 0;
+    private int counterOfRightAnswers = 0;
+    private boolean gameOver = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +55,33 @@ public class MainActivity extends AppCompatActivity {
 
         playNext();
 
+        CountDownTimer timer = new CountDownTimer(30000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                textViewTimer.setText(getTimer(millisUntilFinished));
+
+                if (millisUntilFinished < 10000){
+                    textViewTimer.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                gameOver = true;
+
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                int max = preferences.getInt("max", 0);
+                if (counterOfRightAnswers >= max){
+                    preferences.edit().putInt("max", counterOfRightAnswers).apply();
+                }
+
+                Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+                intent.putExtra("counterOfRightAnswers", counterOfRightAnswers);
+                startActivity(intent);
+            }
+        };
+        timer.start();
+
     }
 
     private void playNext(){
@@ -60,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 options.get(i).setText(Integer.toString(generateWrongAnswer()));
             }
         }
+        String score = String.format("%s / %s", counterOfRightAnswers, countOfQuestion);
+        textViewScore.setText(score);
     }
 
     private void generateQuestin(){
@@ -93,6 +129,29 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickAnswer(View view) {
 
-        playNext();
+        if (!gameOver) {
+            TextView textView = (TextView) view;
+            String answer = textView.getText().toString();
+            int shosenAnswer = Integer.parseInt(answer);
+
+            if (shosenAnswer == rightAnswer) {
+                counterOfRightAnswers++;
+                Toast.makeText(this, "Right!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Wrong!", Toast.LENGTH_SHORT).show();
+            }
+            countOfQuestion++;
+
+            playNext();
+        }
+    }
+
+    private String getTimer(long millis){
+
+        int seconds = (int)(millis / 1000);
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
     }
 }
